@@ -1,0 +1,56 @@
+version: "3.7"
+
+services:
+  postgres:
+    image: postgres:11
+    container_name: airflow-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  airflow-webserver:
+    image: apache/airflow:2.6.3
+    container_name: airflow-webserver
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      AIRFLOW__CORE__FERNET_KEY: 'HdIF_2ZjFQf68pynKtXmyN4YGlVi322MMu35NCXYvaU='
+      AIRFLOW__WEBSERVER__SECRET_KEY: 'HdIF_2ZjFQf68pynKtXmyN4YGlVi322MMu35NCXYvaU='
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./airflow/scripts:/opt/airflow/scripts
+      - ./entrypoint.sh:/entrypoint.sh
+      - ./datas:/opt/airflow/datas
+    entrypoint: ["/entrypoint.sh"]
+    command: ["webserver"]
+    ports:
+      - "8080:8080"
+
+  airflow-scheduler:
+    image: apache/airflow:2.6.3
+    container_name: airflow-scheduler
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./airflow/scripts:/opt/airflow/scripts
+      - ./entrypoint.sh:/entrypoint.sh
+      - ./datas:/opt/airflow/datas
+    entrypoint: ["/entrypoint.sh"]
+    command: ["scheduler"]
+
+volumes:
+  postgres_data:
