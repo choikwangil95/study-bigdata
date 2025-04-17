@@ -1,5 +1,6 @@
 import requests
 import pandas as pd
+import boto3
 import ast
 import os
 from datetime import datetime
@@ -35,4 +36,24 @@ os.makedirs(default_path, exist_ok=True)
 file_path = os.path.join(default_path, f"avatar_characters_{timestamp}.csv")
 
 df.to_csv(file_path, index=False)
+
 print(f"✅ CSV 저장 완료: {file_path}")
+
+
+# 5. S3 업로드
+# S3 스토리지 이름 정의
+bucket_name = "hk-mlops-storage-1"
+
+# AWS S3 클라이언트 생성
+s3 = boto3.client("s3", region_name="ap-northeast-2")
+
+# 현재 날짜와 시간으로 파일 이름 생성
+file_name =  f"test/data_{timestamp}.csv"
+
+# S3에 파일 업로드
+try:
+    s3.upload_file(file_path, bucket_name, file_name) # 저장할 파일명, S3 버킷명, 저장할 폴더 경로
+    print(f"✅ S3 업로드 완료: s3://{bucket_name}/{file_name}")
+except Exception as e:
+    print(f"❌ S3 업로드 실패: {e}")
+    
