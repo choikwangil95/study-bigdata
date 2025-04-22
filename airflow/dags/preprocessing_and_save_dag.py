@@ -20,12 +20,25 @@ with DAG(
     is_paused_upon_creation=False,  # DAG이 생성되자마자 실행 가능 상태로 설정
 ) as dag:
 
-    # BashOperator를 사용해 preprocessing.py 실행
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # preprocessing.py 실행
     run_preprocessing = BashOperator(
         task_id="run_avatar_preprocessing",  # task의 이름 (UI에서 식별용)
-        bash_command="python /opt/airflow/scripts/preprocessing.py",  # 실제 실행할 bash 명령어
-        dag=dag,  # 명시적으로 DAG 연결 (with 블록 안에선 생략해도 됨)
+        bash_command="python /opt/airflow/scripts/preprocessing.py '{{ execution_date.strftime('%Y%m%d_%H%M%S') }}'",  # 실제 실행할 bash 명령어
     )
 
-    # 태스크 실행 명시 (단일 태스크일 경우 이 라인 없어도 됨)
-    run_preprocessing
+    # preprocessing.py 실행 >> save_file.py 실행
+    run_save_file = BashOperator(
+        task_id="run_save_file",  # task의 이름 (UI에서 식별용)
+        bash_command="python /opt/airflow/scripts/save_file.py '{{ execution_date.strftime('%Y%m%d_%H%M%S') }}'",  # 실제 실행할 bash 명령어
+    )
+
+    # preprocessing.py 실행 >> save_rdb.py 실행
+    run_save_rdb = BashOperator(
+        task_id="run_save_rdb",  # task의 이름 (UI에서 식별용)
+        bash_command="python /opt/airflow/scripts/save_rdb.py '{{ execution_date.strftime('%Y%m%d_%H%M%S') }}'",  # 실제 실행할 bash 명령어
+    )
+
+    # run_preprocessing이 끝난 후 run_save_file과 run_save_rdb 실행
+    run_preprocessing >> [run_save_file, run_save_rdb] 

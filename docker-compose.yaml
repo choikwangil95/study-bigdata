@@ -11,6 +11,9 @@ services:
       POSTGRES_DB: airflow
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql # mlops db init scripts 
+    ports:
+      - "5432:5432" #  외부에서 localhost:5432 접속 가능
 
   airflow-webserver:
     image: apache/airflow:2.6.3
